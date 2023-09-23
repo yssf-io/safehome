@@ -1,18 +1,25 @@
+import RPi.GPIO as GPIO
+import time
 import requests as req
 from web3 import Web3
 from hexbytes import HexBytes
 from eth_account.messages import encode_defunct
 
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(18, GPIO.OUT)
+
 attached_safe = "0xCDceCF435EA89e5BF5652696BfE9755eEcB1D1db"
+
+SERVER_URL = "http://localhost:3000/"
 
 
 def fetch_owners():
-    owners = req.get("http://localhost:3000/api/safes/" + attached_safe).json()
+    owners = req.get(SERVER_URL + "api/safes/" + attached_safe).json()
     return owners["owners"]
 
 
 def fetch_signatures():
-    signatures = req.get("http://localhost:3000/api/signatures/" + attached_safe).json()
+    signatures = req.get(SERVER_URL + "api/signatures/" + attached_safe).json()
     return signatures["signatures"]
 
 
@@ -38,13 +45,14 @@ def verify_signature(address, message, signature):
 
 def main():
     signatures = fetch_signatures()
-    if len(signatures) > 1:
+    print(signatures)
+    if len(signatures) >= 1:
         signature = signatures[0]
         owners = fetch_owners()
         verified = [
             verify_signature(
                 owner["address"],
-                "unlocking home",
+                "unlocking door",
                 signature["signature"],
             )
             for owner in owners
@@ -52,6 +60,11 @@ def main():
 
         if any(verified):
             print("Should open the door")
+            GPIO.output(18, GPIO.HIGH)
+            time.sleep(3)
+            GPIO.output(18, GPIO.LOW)
+            GPIO.cleanup()
+
     else:
         print("No signatures")
 
