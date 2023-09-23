@@ -8,6 +8,8 @@ import { getWalletClient } from "wagmi/actions";
 import SafeApiKit from "@safe-global/api-kit";
 import { SafeFactory } from "@safe-global/protocol-kit";
 import { SafeAccountConfig } from "@safe-global/protocol-kit";
+import Menu from "./Menu";
+import Overview from "./Overview";
 
 export function walletClientToSigner(walletClient: WalletClient) {
   const { account, chain, transport } = walletClient;
@@ -33,6 +35,7 @@ const Dashboard = () => {
   const { address, isConnecting, isDisconnected } = useAccount();
   const [isConnected, setIsConnected] = useState(false);
   const [safe, setSafe] = useState<string | undefined>(undefined);
+  const [tab, setTab] = useState("Overview");
 
   const getSafeIfExists = async () => {
     const { data } = await axios.get(`/api/owners/${address}`);
@@ -90,6 +93,16 @@ const Dashboard = () => {
     console.log(`https://app.safe.global/gor:${safeAddress}`);
 
     // TODO: save owners + safe to DB, manually for now
+    const safe = await axios.post("/api/safes", {
+      address: safeAddress,
+    });
+
+    const owner = await axios.post("/api/owners", {
+      address,
+      safe: safeAddress,
+    });
+
+    console.log("SafeHome created", safe, owner);
   };
 
   return (
@@ -97,7 +110,10 @@ const Dashboard = () => {
       {isConnected && address ? (
         <div>
           {safe ? (
-            <div>Dashboard goes here</div>
+            <div className="flex">
+              <Menu tab={tab} setTab={setTab} />
+              <Overview />
+            </div>
           ) : (
             <div className="text-center mt-20 font-light">
               <p className="text-2xl">
