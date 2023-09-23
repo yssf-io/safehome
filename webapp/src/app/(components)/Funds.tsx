@@ -119,9 +119,11 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
       <h1 className="text-4xl px-8 py-4">Funds</h1>
 
       <div className="flex w-full">
-        {/*<p onClick={() => sendTransaction()} className="cursor-pointer">
-          Send
-  </p>*/}
+        {
+          <p onClick={() => sendTransaction()} className="cursor-pointer">
+            Send
+          </p>
+        }
         <div className="border flex w-full ml-8">
           <div className="w-full">
             <h2 className="p-2 text-2xl">Balances</h2>
