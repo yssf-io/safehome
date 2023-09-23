@@ -1,7 +1,13 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { init, useQuery, useGetTokenBalances } from "@airstack/airstack-react";
-import Safe from "@safe-global/protocol-kit";
+import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { tokenToString } from "typescript";
+import { ethers } from "ethers";
+import { SafeTransactionDataPartial } from "@safe-global/safe-core-sdk-types";
+import { getEthersSigner } from "./Dashboard";
+import SafeApiKit from "@safe-global/api-kit";
+import { getWalletClient } from "wagmi/actions";
+import { useSignMessage } from "wagmi";
 
 init("70a71f7ddada4737bd6591343d3c742d");
 
@@ -22,6 +28,15 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
   const [sum, setSum] = useState(0);
   const [owners, setOwners] = useState<string[]>([]);
   const [tokens, setTokens] = useState<any>([]);
+  const {
+    data: m,
+    isError,
+    isLoading,
+    isSuccess,
+    signMessage,
+  } = useSignMessage({
+    message: "message to sign",
+  });
 
   useEffect(() => {
     fetchData();
@@ -45,11 +60,68 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
     }
   }, [data]);
 
+  const sendTransaction = async () => {
+    console.log("sending transaction");
+    const destination = "0xc817611ADE9f7F78D8291fDc1763a2Aa8F28Cc94";
+    const amount = ethers.utils.parseUnits("0.5", "ether").toString();
+
+    const signer = await getEthersSigner({ chainId: 137 });
+    if (!signer) return undefined;
+
+    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer });
+    const safeSdk = await Safe.create({ ethAdapter, safeAddress });
+
+    const safeTransactionData: SafeTransactionDataPartial = {
+      to: destination,
+      data: "0x",
+      value: amount,
+    };
+    // Create a Safe transaction with the provided parameters
+    const safeTransaction = await safeSdk.createTransaction({
+      safeTransactionData,
+    });
+
+    // Deterministic hash based on transaction parameters
+    const safeTxHash = await safeSdk.getTransactionHash(safeTransaction);
+
+    console.log("signing");
+    // const wallet = await getWalletClient();
+    // await wallet?.signMessage({ message: "hellooo" });
+    signMessage();
+    const senderSignature = await safeSdk.signTransactionHash(safeTxHash);
+
+    const txServiceUrl = "https://safe-transaction-polygon.safe.global";
+    const safeService = new SafeApiKit({
+      txServiceUrl,
+      ethAdapter: ethAdapter,
+    });
+
+    console.log("proposing");
+    await safeService.proposeTransaction({
+      safeAddress,
+      safeTransactionData: safeTransaction.data,
+      safeTxHash,
+      senderAddress: await signer.getAddress(),
+      senderSignature: senderSignature.data,
+    });
+
+    console.log("executing");
+    const executeTxResponse = await safe.executeTransaction(safeTransaction);
+    const receipt = await executeTxResponse.transactionResponse?.wait();
+
+    console.log("Transaction executed:");
+    if (!receipt) return;
+    console.log(`https://polygonscan.com/tx/${receipt.transactionHash}`);
+  };
+
   return (
     <div className="border w-full">
       <h1 className="text-4xl px-8 py-4">Funds</h1>
 
       <div className="flex w-full">
+        {/*<p onClick={() => sendTransaction()} className="cursor-pointer">
+          Send
+  </p>*/}
         <div className="border flex w-full ml-8">
           <div className="w-full">
             <h2 className="p-2 text-2xl">Balances</h2>
