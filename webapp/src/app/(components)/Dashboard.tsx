@@ -10,6 +10,7 @@ import Safe, { SafeFactory } from "@safe-global/protocol-kit";
 import { SafeAccountConfig } from "@safe-global/protocol-kit";
 import Menu from "./Menu";
 import Overview from "./Overview";
+import Funds from "./Funds";
 
 export function walletClientToSigner(walletClient: WalletClient) {
   const { account, chain, transport } = walletClient;
@@ -130,7 +131,12 @@ const Dashboard = () => {
           {safe && safeInstance ? (
             <div className="flex">
               <Menu tab={tab} setTab={setTab} />
-              <Overview safeAddress={safe} safe={safeInstance} />
+              {tab === "Overview" && (
+                <Overview safeAddress={safe} safe={safeInstance} />
+              )}
+              {tab === "Funds" && (
+                <Funds safeAddress={safe} safe={safeInstance} />
+              )}
             </div>
           ) : (
             <div className="text-center mt-20 font-light">
