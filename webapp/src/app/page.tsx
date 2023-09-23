@@ -6,10 +6,10 @@ import {
 } from "@web3modal/ethereum";
 import { Web3Button, Web3Modal } from "@web3modal/react";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { arbitrum, mainnet, polygon } from "wagmi/chains";
+import { arbitrum, goerli, mainnet, polygon } from "wagmi/chains";
 import Dashboard from "./(components)/Dashboard";
 
-const chains = [arbitrum, mainnet, polygon];
+const chains = [polygon];
 const projectId = "1b02254489e1baf6c7e25adbacd8a731";
 
 const { publicClient } = configureChains(chains, [w3mProvider({ projectId })]);

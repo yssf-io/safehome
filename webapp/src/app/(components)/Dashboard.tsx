@@ -1,7 +1,33 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { WalletClient, useAccount } from "wagmi";
 import { Owner } from "../api/database";
+import { ethers, providers } from "ethers";
+import { EthersAdapter } from "@safe-global/protocol-kit";
+import { getWalletClient } from "wagmi/actions";
+import SafeApiKit from "@safe-global/api-kit";
+import { SafeFactory } from "@safe-global/protocol-kit";
+import { SafeAccountConfig } from "@safe-global/protocol-kit";
+
+export function walletClientToSigner(walletClient: WalletClient) {
+  const { account, chain, transport } = walletClient;
+  const network = {
+    chainId: chain.id,
+    name: chain.name,
+    ensAddress: chain.contracts?.ensRegistry?.address,
+  };
+  const provider = new providers.Web3Provider(transport, network);
+  const signer = provider.getSigner(account.address);
+  return signer;
+}
+
+export async function getEthersSigner({ chainId }: { chainId?: number } = {}) {
+  const walletClient = await getWalletClient({ chainId });
+  if (!walletClient) return undefined;
+  return walletClientToSigner(walletClient);
+}
+
+const RPC_URL = "https://eth-goerli.public.blastapi.io";
 
 const Dashboard = () => {
   const { address, isConnecting, isDisconnected } = useAccount();
@@ -30,6 +56,42 @@ const Dashboard = () => {
     }
   }, [address]);
 
+  const handleSafeCreation = async () => {
+    console.log("creating safe");
+
+    const signer = await getEthersSigner({ chainId: 137 });
+    if (!signer) return undefined;
+
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer,
+    });
+
+    const txServiceUrl = "https://safe-transaction-polygon.safe.global";
+
+    const safeService = new SafeApiKit({
+      txServiceUrl,
+      ethAdapter: ethAdapter,
+    });
+
+    const safeFactory = await SafeFactory.create({ ethAdapter });
+
+    const safeAccountConfig: SafeAccountConfig = {
+      owners: [await signer.getAddress()],
+      threshold: 1,
+    };
+
+    const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig });
+
+    const safeAddress = await safeSdkOwner1.getAddress();
+
+    console.log("Your Safe has been deployed:");
+    console.log(`https://goerli.etherscan.io/address/${safeAddress}`);
+    console.log(`https://app.safe.global/gor:${safeAddress}`);
+
+    // TODO: save owners + safe to DB, manually for now
+  };
+
   return (
     <div className="w-full">
       {isConnected && address ? (
@@ -40,6 +102,13 @@ const Dashboard = () => {
             <div className="text-center mt-20 font-light">
               <p className="text-2xl">
                 Looks like you don't have a SafeHome yet
+              </p>
+
+              <p
+                onClick={handleSafeCreation}
+                className="px-8 py-3 cursor-pointer text-3xl bg-blue-500 text-white w-fit m-auto rounded mt-8 hover:bg-blue-400"
+              >
+                Create a SafeHome
               </p>
             </div>
           )}
