@@ -6,10 +6,14 @@ from eth_account.messages import encode_defunct
 attached_safe = "0xCDceCF435EA89e5BF5652696BfE9755eEcB1D1db"
 
 
+def fetch_owners():
+    owners = req.get("http://localhost:3000/api/safes/" + attached_safe).json()
+    return owners["owners"]
+
+
 def fetch_signatures():
-    r = req.get("http://localhost:3000/api/safes/" + attached_safe)
-    print(r.json())
-    return r.json()
+    signatures = req.get("http://localhost:3000/api/signatures/" + attached_safe).json()
+    return signatures["signatures"]
 
 
 def verify_signature(address, message, signature):
@@ -32,4 +36,25 @@ def verify_signature(address, message, signature):
     return recovered_address.lower() == address.lower()
 
 
-fetch_signatures()
+def main():
+    signatures = fetch_signatures()
+    if len(signatures) > 1:
+        signature = signatures[0]
+        owners = fetch_owners()
+        verified = [
+            verify_signature(
+                owner["address"],
+                "unlocking home",
+                signature["signature"],
+            )
+            for owner in owners
+        ]
+
+        if any(verified):
+            print("Should open the door")
+    else:
+        print("No signatures")
+
+
+if __name__ == "__main__":
+    main()
