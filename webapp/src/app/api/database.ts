@@ -9,6 +9,11 @@ export interface Owner {
   safe: string;
 }
 
+export interface Signature {
+  safe: string;
+  signature: string;
+}
+
 export const knex = Knex({
   client: "pg",
   connection: process.env.CONNECTION_STRING,
@@ -36,4 +41,22 @@ export const addOwner = async (owner: Owner) => {
 
 export const addSafe = async (safe: Safe) => {
   return await knex("safes").insert(safe).returning("*");
+};
+
+export const getSignatures = async (): Promise<Signature[]> => {
+  return await knex("signatures");
+};
+
+export const getSignaturesBySafe = async (
+  safe: string
+): Promise<Signature[]> => {
+  return await knex("signatures").where({ safe });
+};
+
+export const addSignature = async (signature: Signature) => {
+  return await knex("signatures").insert(signature).returning("*");
+};
+
+export const deleteSignature = async (signature: Signature) => {
+  return await knex("signatures").where({ signature }).del().returning("*");
 };
