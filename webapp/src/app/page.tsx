@@ -7,6 +7,7 @@ import {
 import { Web3Button, Web3Modal } from "@web3modal/react";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { arbitrum, mainnet, polygon } from "wagmi/chains";
+import Dashboard from "./(components)/Dashboard";
 
 const chains = [arbitrum, mainnet, polygon];
 const projectId = "1b02254489e1baf6c7e25adbacd8a731";
@@ -24,11 +25,11 @@ export default function Home() {
     <div>
       <WagmiConfig config={wagmiConfig}>
         <main className="">
-          <h1>hello world</h1>
-
           <div className="absolute top-5 right-5">
             <Web3Button />
           </div>
+
+          <Dashboard />
         </main>
       </WagmiConfig>
 
