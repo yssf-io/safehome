@@ -6,7 +6,7 @@ import { ethers, providers } from "ethers";
 import { EthersAdapter } from "@safe-global/protocol-kit";
 import { getWalletClient } from "wagmi/actions";
 import SafeApiKit from "@safe-global/api-kit";
-import { SafeFactory } from "@safe-global/protocol-kit";
+import Safe, { SafeFactory } from "@safe-global/protocol-kit";
 import { SafeAccountConfig } from "@safe-global/protocol-kit";
 import Menu from "./Menu";
 import Overview from "./Overview";
@@ -29,13 +29,14 @@ export async function getEthersSigner({ chainId }: { chainId?: number } = {}) {
   return walletClientToSigner(walletClient);
 }
 
-const RPC_URL = "https://eth-goerli.public.blastapi.io";
+// const RPC_URL = "https://eth-goerli.public.blastapi.io";
 
 const Dashboard = () => {
   const { address, isConnecting, isDisconnected } = useAccount();
   const [isConnected, setIsConnected] = useState(false);
   const [safe, setSafe] = useState<string | undefined>(undefined);
   const [tab, setTab] = useState("Overview");
+  const [safeInstance, setSafeInstance] = useState<Safe | undefined>(undefined);
 
   const getSafeIfExists = async () => {
     const { data } = await axios.get(`/api/owners/${address}`);
@@ -45,8 +46,10 @@ const Dashboard = () => {
         (owner: Owner) => owner.address.toLowerCase() === address.toLowerCase()
       );
 
-      if (owner) setSafe(owner.safe);
-      else console.log("no safe found");
+      if (owner) {
+        setSafe(owner.safe);
+        await connectToSafe(owner.safe);
+      } else console.log("no safe found");
     }
   };
 
@@ -58,6 +61,20 @@ const Dashboard = () => {
       setIsConnected(false);
     }
   }, [address]);
+
+  const connectToSafe = async (safe: string) => {
+    const signer = await getEthersSigner({ chainId: 137 });
+    if (!signer) return undefined;
+
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer,
+    });
+
+    if (!safe) return;
+    const safeSdkOwner1 = await Safe.create({ ethAdapter, safeAddress: safe });
+    setSafeInstance(safeSdkOwner1);
+  };
 
   const handleSafeCreation = async () => {
     console.log("creating safe");
@@ -85,6 +102,7 @@ const Dashboard = () => {
     };
 
     const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig });
+    setSafeInstance(safeSdkOwner1);
 
     const safeAddress = await safeSdkOwner1.getAddress();
 
@@ -109,10 +127,10 @@ const Dashboard = () => {
     <div className="w-full">
       {isConnected && address ? (
         <div>
-          {safe ? (
+          {safe && safeInstance ? (
             <div className="flex">
               <Menu tab={tab} setTab={setTab} />
-              <Overview />
+              <Overview safeAddress={safe} safe={safeInstance} />
             </div>
           ) : (
             <div className="text-center mt-20 font-light">
