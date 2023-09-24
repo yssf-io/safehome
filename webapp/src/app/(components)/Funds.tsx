@@ -60,6 +60,49 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
     }
   }, [data]);
 
+  useEffect(() => {
+    if (m) {
+      console.log({ m });
+      sendTransactionWithSignature();
+    }
+  }, [m]);
+
+  const sendTransactionWithSignature = async () => {
+    const destination = "0xc817611ADE9f7F78D8291fDc1763a2Aa8F28Cc94";
+    const amount = ethers.utils.parseUnits("0.5", "ether").toString();
+
+    const safeTransactionData: SafeTransactionDataPartial = {
+      to: destination,
+      data: "0x",
+      value: amount,
+    };
+
+    // Create a Safe transaction with the provided parameters
+    const safeTransaction = await safe.createTransaction({
+      safeTransactionData,
+    });
+
+    const safeTxHash = await safe.getTransactionHash(safeTransaction);
+
+    const signer = await getEthersSigner({ chainId: 137 });
+    if (!signer) return undefined;
+    const ethAdapter = new EthersAdapter({ ethers, signerOrProvider: signer });
+    const txServiceUrl = "https://safe-transaction-polygon.safe.global";
+    const safeService = new SafeApiKit({
+      txServiceUrl,
+      ethAdapter: ethAdapter,
+    });
+
+    console.log("proposing");
+    await safeService.proposeTransaction({
+      safeAddress,
+      safeTransactionData: safeTransaction.data,
+      safeTxHash,
+      senderAddress: await signer.getAddress(),
+      senderSignature: data,
+    });
+  };
+
   const sendTransaction = async () => {
     console.log("sending transaction");
     const destination = "0xc817611ADE9f7F78D8291fDc1763a2Aa8F28Cc94";
@@ -82,36 +125,39 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
     });
 
     // Deterministic hash based on transaction parameters
-    const safeTxHash = await safeSdk.getTransactionHash(safeTransaction);
+    // const safeTxHash = await safeSdk.getTransactionHash(safeTransaction);
 
     console.log("signing");
     // const wallet = await getWalletClient();
     // await wallet?.signMessage({ message: "hellooo" });
-    signMessage();
-    const senderSignature = await safeSdk.signTransactionHash(safeTxHash);
+    // signMessage({ message: safeTxHash });
+    const senderSignature = await safeSdk.signTransaction(
+      safeTransaction,
+      "eth_sign"
+    );
 
-    const txServiceUrl = "https://safe-transaction-polygon.safe.global";
-    const safeService = new SafeApiKit({
-      txServiceUrl,
-      ethAdapter: ethAdapter,
-    });
+    // const txServiceUrl = "https://safe-transaction-polygon.safe.global";
+    // const safeService = new SafeApiKit({
+    //   txServiceUrl,
+    //   ethAdapter: ethAdapter,
+    // });
 
-    console.log("proposing");
-    await safeService.proposeTransaction({
-      safeAddress,
-      safeTransactionData: safeTransaction.data,
-      safeTxHash,
-      senderAddress: await signer.getAddress(),
-      senderSignature: senderSignature.data,
-    });
+    // console.log("proposing");
+    // // await safeService.proposeTransaction({
+    // //   safeAddress,
+    // //   safeTransactionData: safeTransaction.data,
+    // //   safeTxHash,
+    // //   senderAddress: await signer.getAddress(),
+    // //   senderSignature: senderSignature.data,
+    // // });
 
-    console.log("executing");
-    const executeTxResponse = await safe.executeTransaction(safeTransaction);
-    const receipt = await executeTxResponse.transactionResponse?.wait();
+    // console.log("executing");
+    // const executeTxResponse = await safe.executeTransaction(safeTransaction);
+    // const receipt = await executeTxResponse.transactionResponse?.wait();
 
-    console.log("Transaction executed:");
-    if (!receipt) return;
-    console.log(`https://polygonscan.com/tx/${receipt.transactionHash}`);
+    // console.log("Transaction executed:");
+    // if (!receipt) return;
+    // console.log(`https://polygonscan.com/tx/${receipt.transactionHash}`);
   };
 
   return (
