@@ -165,11 +165,11 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
       <h1 className="text-4xl px-8 py-4">Funds</h1>
 
       <div className="flex w-full">
-        {
+        {/*
           <p onClick={() => sendTransaction()} className="cursor-pointer">
             Send
           </p>
-        }
+  */}
         <div className="border flex w-full ml-8">
           <div className="w-full">
             <h2 className="p-2 text-2xl">Balances</h2>
@@ -199,6 +199,14 @@ const Funds = ({ safe, safeAddress }: { safe: Safe; safeAddress: string }) => {
                   alt="safe address qr code"
                 />
               </div>
+              <p className="text-center">
+                <a
+                  href="https://onramp.gatefi.com/?merchantId=76555590-c3c7-4608-8f25-37165c3f5fee"
+                  target="_blank"
+                >
+                  Buy via Unlimit Crypto
+                </a>
+              </p>
             </div>
           </div>
         </div>
