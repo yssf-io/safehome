@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+import json
 import requests as req
 from web3 import Web3
 from hexbytes import HexBytes
@@ -232,6 +233,8 @@ attached_safe = "0xCDceCF435EA89e5BF5652696BfE9755eEcB1D1db"
 
 SERVER_URL = "http://localhost:3000/"
 
+OFFLINE_GUEST = "0x22C9FbAA507E3E41f6e742D97E45e4f6F6721937"
+
 
 def fetch_owners():
     owners = req.get(SERVER_URL + "api/safes/" + attached_safe).json()
@@ -304,16 +307,32 @@ def main():
             for owner in owners
         ]
 
-        if any(verified):
+        if any(verified) or verify_signature(
+            OFFLINE_GUEST, "unlocking door", signature["signature"]
+        ):
             print("Should open the door")
             GPIO.output(18, GPIO.HIGH)
             time.sleep(3)
             GPIO.output(18, GPIO.LOW)
             GPIO.cleanup()
 
+            headers = {"Content-Type": "application/json"}
+
+            response = req.delete(
+                SERVER_URL + "api/signatures/",
+                headers=headers,
+                data=json.dumps(signature),
+            )
+
     else:
         print("No signatures")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        while True:
+            main()
+            time.sleep(5)
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        print("bye")
