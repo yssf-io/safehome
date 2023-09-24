@@ -8,7 +8,7 @@ import {EntranceKeys} from "./EntranceKeys.sol";
 contract RentalAgreements {
     uint256 count;
     EntranceKeys constant entrance =
-        EntranceKeys(0x693980bE93634c45634c5704B6463321e9e34428);
+        EntranceKeys(0x031B09A855f48EBaec2fb743a61d2629A69F02C1);
 
     struct Agreement {
         address safe;

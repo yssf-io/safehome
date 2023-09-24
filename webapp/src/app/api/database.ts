@@ -59,5 +59,8 @@ export const addSignature = async (signature: Signature) => {
 };
 
 export const deleteSignature = async (signature: Signature) => {
-  return await knex("signatures").where({ signature }).del().returning("*");
+  return await knex("signatures")
+    .where({ signature: signature.signature })
+    .del()
+    .returning("*");
 };
