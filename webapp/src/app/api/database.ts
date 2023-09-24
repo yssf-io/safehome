@@ -12,6 +12,7 @@ export interface Owner {
 export interface Signature {
   safe: string;
   signature: string;
+  key?: number;
 }
 
 export const knex = Knex({
